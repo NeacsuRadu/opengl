@@ -166,9 +166,47 @@ int main()
 
     stbi_image_free(txt_data);
 
+    txt_data = stbi_load("textures/container2_specular.png", &width, &height, &channels, 0);
+    if (!txt_data)
+        std::cout << "Failed to load texture" << std::endl;
+
+    unsigned int txtContainer2Sp;
+    glGenTextures(1, &txtContainer2Sp);
+    glBindTexture(GL_TEXTURE_2D, txtContainer2Sp);
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, txt_data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    stbi_image_free(txt_data);
+
+    txt_data = stbi_load("textures/matrix.jpg", &width, &height, &channels, 0);
+    if (!txt_data)
+        std::cout << "Failed to load texture" << std::endl;
+
+    unsigned int txtMatrix;
+    glGenTextures(1, &txtMatrix);
+    glBindTexture(GL_TEXTURE_2D, txtMatrix);
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, txt_data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    stbi_image_free(txt_data);
+
+
     programContainer2.Use();
     programContainer2.SetUniform("material.diffuse", 0);
-    programContainer2.SetUniform("material.specular", glm::vec3(0.5f, 0.5f, 0.5f));
+    programContainer2.SetUniform("material.specular", 1);
+    programContainer2.SetUniform("emission", 2);
     programContainer2.SetUniform("material.shininess", 32.0f);
     programContainer2.SetUniform("light.ambient", glm::vec3(0.2, 0.2, 0.2));
     programContainer2.SetUniform("light.diffuse", glm::vec3(0.5, 0.5, 0.5));
@@ -333,6 +371,12 @@ int main()
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, txtContainer2);
+
+        glActiveTexture(GL_TEXTURE0 + 1);
+        glBindTexture(GL_TEXTURE_2D, txtContainer2Sp);
+
+        glActiveTexture(GL_TEXTURE0 + 2);
+        glBindTexture(GL_TEXTURE_2D, txtMatrix);
 
         programContainer2.SetUniform("model", glm::mat4(1.0f));
         programContainer2.SetUniform("view", view);
