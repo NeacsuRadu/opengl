@@ -4,100 +4,34 @@
 #include <stb/stb_image.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <Camera.h>
+#include <Callbacks.h>
 
 #include <iostream>
 
 unsigned int WINDOW_WIDTH = 800;
 unsigned int WINDOW_HEIGHT = 600;
 
-float g_cameraSpeed = 0.5f;
-float g_deltaTime = 0.0f;
 float g_currentFrame = 0.0f;
-
-float g_lastX = 400.0f;
-float g_lastY = 300.0f;
-float g_pitch = 0.0f;
-float g_yaw = -90.0f;
-float g_fov = 45.0f;
-
-bool g_firstMouse = true;
-
-glm::vec3 g_cameraPosition(0.0f, 0.0f, 3.0f);
-glm::vec3 g_cameraDirection(0.0f, 0.0f, -1.0f);
-glm::vec3 g_worldUp(0.0f, 1.0f, 0.0f);
-
-
-void framebuffer_size_callback(GLFWwindow * pWindow, int width, int height)
-{
-    glViewport(0, 0, width, height);
-}
-
-void mouse_callback(GLFWwindow * pWindow, double xpos, double ypos)
-{
-    if (g_firstMouse)
-    {
-        g_firstMouse = false;
-        g_lastX = xpos;
-        g_lastY = ypos;
-    }
-
-    float xoffset = xpos - g_lastX;
-    float yoffset = g_lastY - ypos;
-    g_lastX = xpos;
-    g_lastY = ypos;
-
-    float sensivity = 0.05f;
-    xoffset *= sensivity;
-    yoffset *= sensivity;
-
-    g_yaw += xoffset;
-    g_pitch += yoffset;
-
-    if(g_pitch > 89.0f)
-        g_pitch = 89.0f;
-    if(g_pitch < -89.0f)
-        g_pitch = -89.0f;
-
-    glm::vec3 front;
-    front.x = cos(glm::radians(g_yaw));// * cos(glm::radians(g_pitch));
-    front.y = sin(glm::radians(g_pitch));
-    front.z = sin(glm::radians(g_yaw));// * cos(glm::radians(g_pitch));
-    g_cameraDirection = glm::normalize(front);
-}
-
-void scroll_callback(GLFWwindow * pWindow, double xoffset, double yoffset)
-{
-    if (g_fov >= 1.0f && g_fov <= 45.0f)
-        g_fov -= yoffset;
-    if (g_fov <= 1.0f)
-        g_fov = 1.0f;
-    if (g_fov >= 45.0f)
-        g_fov = 45.0f;
-}
 
 void process_input(GLFWwindow * pWindow)
 {
-    g_cameraSpeed = 2.5f * g_deltaTime;
+    using namespace Engenius;
     if (glfwGetKey(pWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(pWindow, true);
-    
-    glm::vec3 movingDirection = g_cameraDirection;
-    //movingDirection.y = 0.0f;
-    if (glfwGetKey(pWindow, GLFW_KEY_W) == GLFW_PRESS)
-        g_cameraPosition += g_cameraSpeed * movingDirection;
-
-    if (glfwGetKey(pWindow, GLFW_KEY_S) == GLFW_PRESS)
-        g_cameraPosition -= g_cameraSpeed * movingDirection;
-
-    if (glfwGetKey(pWindow, GLFW_KEY_A) == GLFW_PRESS)
-        g_cameraPosition -= g_cameraSpeed * glm::normalize(glm::cross(movingDirection, g_worldUp));
-
-    if (glfwGetKey(pWindow, GLFW_KEY_D) == GLFW_PRESS)
-        g_cameraPosition += g_cameraSpeed * glm::normalize(glm::cross(movingDirection, g_worldUp));
+    else if (glfwGetKey(pWindow, GLFW_KEY_W) == GLFW_PRESS)
+        Camera::Instance().UpdatePositionFront();
+    else if (glfwGetKey(pWindow, GLFW_KEY_S) == GLFW_PRESS)
+        Camera::Instance().UpdatePositionBack();
+    else if (glfwGetKey(pWindow, GLFW_KEY_A) == GLFW_PRESS)
+        Camera::Instance().UpdatePositionLeft();
+    else if (glfwGetKey(pWindow, GLFW_KEY_D) == GLFW_PRESS)
+        Camera::Instance().UpdatePositionRight();
 }
 
 int main()
 {
+    using namespace Engenius;
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -112,8 +46,8 @@ int main()
     }
     glfwMakeContextCurrent(pWindow);
     glfwSetInputMode(pWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSetCursorPosCallback(pWindow, mouse_callback);
-    glfwSetScrollCallback(pWindow, scroll_callback);
+    glfwSetCursorPosCallback(pWindow, Callbacks::MouseMove);
+    glfwSetScrollCallback(pWindow, Callbacks::MouseScroll);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
@@ -125,11 +59,11 @@ int main()
     glEnable(GL_DEPTH_TEST);
 
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-    glfwSetFramebufferSizeCallback(pWindow, framebuffer_size_callback);
+    glfwSetFramebufferSizeCallback(pWindow, Callbacks::FramebufferSize);
 
-    std::string vertexShaderPath = "shaders/vertex_shaders/lighting.vs";
-    std::string fragmentShaderPath = "shaders/fragment_shaders/lighting.fs";
-    std::string lightSourceFSPath = "shaders/fragment_shaders/lightSource.fs";
+    std::string vertexShaderPath = "../shaders/vertex_shaders/lighting.vs";
+    std::string fragmentShaderPath = "../shaders/fragment_shaders/lighting.fs";
+    std::string lightSourceFSPath = "../shaders/fragment_shaders/lightSource.fs";
     CShaderProgram program(vertexShaderPath, fragmentShaderPath);
     program.Use();
     program.SetUniform("material.ambient", glm::vec3(1.0, 0.5, 0.31));
@@ -137,18 +71,18 @@ int main()
     program.SetUniform("material.specular", glm::vec3(0.5, 0.5, 0.5));
     program.SetUniform("material.shininess", 32.0f);
     program.SetUniform("light.ambient", glm::vec3(0.2, 0.2, 0.2));
-    program.SetUniform("light.diffuse", glm::vec3(0.5, 0.5, 0.5));
+    program.SetUniform("light.diffuse", glm::vec3(0.8, 0.8, 0.8));
     program.SetUniform("light.specular", glm::vec3(1.0, 1.0, 1.0));
 
     CShaderProgram lightSourceProgram(vertexShaderPath, lightSourceFSPath);
     CShaderProgram programContainer2(
-        "shaders/vertex_shaders/lighting_container2.vs",
-        "shaders/fragment_shaders/lighting_container2.fs"
+        "../shaders/vertex_shaders/lighting_container2.vs",
+        "../shaders/fragment_shaders/lighting_container2.fs"
     );
 
     stbi_set_flip_vertically_on_load(true);
     int width, height, channels;
-    unsigned char *txt_data = stbi_load("textures/container2.png", &width, &height, &channels, 0);
+    unsigned char *txt_data = stbi_load("../textures/container2.png", &width, &height, &channels, 0);
     if (!txt_data)
         std::cout << "Failed to load texture" << std::endl;
 
@@ -166,7 +100,7 @@ int main()
 
     stbi_image_free(txt_data);
 
-    txt_data = stbi_load("textures/container2_specular.png", &width, &height, &channels, 0);
+    txt_data = stbi_load("../textures/container2_specular.png", &width, &height, &channels, 0);
     if (!txt_data)
         std::cout << "Failed to load texture" << std::endl;
 
@@ -184,7 +118,7 @@ int main()
 
     stbi_image_free(txt_data);
 
-    txt_data = stbi_load("textures/matrix.jpg", &width, &height, &channels, 0);
+    txt_data = stbi_load("../textures/matrix.jpg", &width, &height, &channels, 0);
     if (!txt_data)
         std::cout << "Failed to load texture" << std::endl;
 
@@ -211,6 +145,9 @@ int main()
     programContainer2.SetUniform("light.ambient", glm::vec3(0.2, 0.2, 0.2));
     programContainer2.SetUniform("light.diffuse", glm::vec3(0.5, 0.5, 0.5));
     programContainer2.SetUniform("light.specular", glm::vec3(1.0, 1.0, 1.0));
+    programContainer2.SetUniform("light.constant", 1.0f);
+    programContainer2.SetUniform("light.linear", 0.07f);
+    programContainer2.SetUniform("light.quadratic", 0.017f);
 
     // stbi_set_flip_vertically_on_load(true);
     // txt_data = stbi_load("textures/awesomeface.png", &width, &height, &channels, 0);
@@ -320,10 +257,23 @@ int main()
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
+    glm::vec3 cubePositions[] = {
+        glm::vec3( 0.0f,  0.0f,  0.0f), 
+        glm::vec3( 2.0f,  5.0f, -15.0f), 
+        glm::vec3(-1.5f, -2.2f, -2.5f),  
+        glm::vec3(-3.8f, -2.0f, -12.3f),  
+        glm::vec3( 2.4f, -0.4f, -3.5f),  
+        glm::vec3(-1.7f,  3.0f, -7.5f),  
+        glm::vec3( 1.3f, -2.0f, -2.5f),  
+        glm::vec3( 1.5f,  2.0f, -2.5f), 
+        glm::vec3( 1.5f,  0.2f, -1.5f), 
+        glm::vec3(-1.3f,  1.0f, -1.5f)  
+    };
+
     while (!glfwWindowShouldClose(pWindow))
     {
         float currentTime = glfwGetTime();
-        g_deltaTime = currentTime - g_currentFrame;
+        Camera::Instance().SetDeltaTime(currentTime - g_currentFrame);
         g_currentFrame = currentTime;
 
         process_input(pWindow);
@@ -338,14 +288,15 @@ int main()
         program.Use();
 
         glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 0.0f));
-        glm::mat4 view = glm::lookAt(g_cameraPosition, g_cameraPosition + g_cameraDirection, g_worldUp);
-        glm::mat4 projection = glm::perspective(glm::radians(g_fov), (float)WINDOW_WIDTH/ (float)WINDOW_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 view = Camera::Instance().GetViewMatrix();
+        glm::mat4 projection = glm::perspective(glm::radians(Camera::Instance().GetFov()), (float)WINDOW_WIDTH/ (float)WINDOW_HEIGHT, 0.1f, 100.0f);
 
         program.SetUniform("model", model);
         program.SetUniform("view", view);
         program.SetUniform("projection", projection);
-        program.SetUniform("viewPos", g_cameraPosition);
+        program.SetUniform("viewPos", Camera::Instance().GetPosition());
         program.SetUniform("light.position", glm::vec3(x, 1.0f, z));
+        program.SetUniform("cameraDir", Camera::Instance().GetDirection());
 
         // glActiveTexture(GL_TEXTURE0);
         // glBindTexture(GL_TEXTURE_2D, texture1);  
@@ -378,12 +329,19 @@ int main()
         glActiveTexture(GL_TEXTURE0 + 2);
         glBindTexture(GL_TEXTURE_2D, txtMatrix);
 
-        programContainer2.SetUniform("model", glm::mat4(1.0f));
         programContainer2.SetUniform("view", view);
         programContainer2.SetUniform("projection", projection);
         programContainer2.SetUniform("light.position", glm::vec3(x, 1.0f, z));
-        programContainer2.SetUniform("viewPos", g_cameraPosition);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        programContainer2.SetUniform("viewPos", Camera::Instance().GetPosition());
+        programContainer2.SetUniform("spotLight.direction", Camera::Instance().GetDirection());
+        programContainer2.SetUniform("spotLight.position",  Camera::Instance().GetPosition());
+        programContainer2.SetUniform("spotLight.angleCos", glm::cos(glm::radians(13.0f)));
+        for (int i = 0; i < 10; ++i)
+        {
+            glm::mat4 model2 = glm::translate(glm::mat4(1.0f), cubePositions[i]);
+            programContainer2.SetUniform("model", model2);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
 
         glBindVertexArray(0);
 

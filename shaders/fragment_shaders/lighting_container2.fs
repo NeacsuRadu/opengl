@@ -14,10 +14,22 @@ struct Light
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
+
+    float constant;
+    float linear;
+    float quadratic;
+};
+
+struct SpotLight
+{
+    vec3 position;
+    vec3 direction;
+    float angleCos;
 };
 
 uniform Material material;
 uniform Light light;
+uniform SpotLight spotLight;
 uniform vec3 viewPos;
 uniform sampler2D emission;
 
@@ -29,6 +41,9 @@ out vec4 FragColor;
 
 void main()
 {
+    float len = length(light.position - fragPos);
+    float attenuation = 1 / (light.constant + len * light.linear + len * len * light.quadratic);
+
     vec3 ambient = light.ambient * vec3(texture(material.diffuse, TxtCoord));
 
     vec3 norm = normalize(Normal);
@@ -41,5 +56,22 @@ void main()
     float spec = pow(max(dot(reflectDir, viewDir), 0.0), material.shininess);
     vec3 specular = light.specular * spec * vec3(texture(material.specular, TxtCoord));
 
-    FragColor = vec4(ambient + diffuse + specular + vec3(texture(emission,TxtCoord)), 1.0);
+    ambient *= attenuation;
+    diffuse *= attenuation;
+    specular *= attenuation;
+
+    vec3 result = ambient + diffuse + specular; 
+
+    vec3 direction = normalize(fragPos - spotLight.position);
+    float coss = dot(direction, spotLight.direction);
+    if (coss > spotLight.angleCos)
+    {
+        result = ambient;
+
+        float diff = max(dot(direction, -norm), 0.0);
+        diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TxtCoord));
+
+        result += diffuse;
+    }
+    FragColor = vec4(result, 1.0);
 }
