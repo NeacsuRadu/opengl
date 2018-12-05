@@ -15,7 +15,11 @@ public:
     void UpdatePositionBack();
     void UpdatePositionLeft();
     void UpdatePositionRight();
-    inline void SetDeltaTime(float dTime) { m_deltaTime = dTime; }
+    inline void SetDeltaTime(float dTime) 
+    { 
+        m_deltaTime = dTime; 
+        m_speed = 2.5f * m_deltaTime;
+    }
 
     inline glm::vec3 GetPosition() const { return m_position; }
     inline glm::vec3 GetDirection() const { return m_direction; }
@@ -26,7 +30,7 @@ private:
     glm::vec3 m_direction = glm::vec3(0.0f, 0.0f, -1.0f);
     glm::vec3 m_worldUp = glm::vec3(0.0f, 1.0f, 0.0);
 
-    float m_speed = 0.5f;
+    float m_speed = 2.5f;
     float m_fov = 45.0f;
     float m_deltaTime = 0.0f;
 };

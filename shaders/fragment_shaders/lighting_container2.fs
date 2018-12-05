@@ -24,7 +24,8 @@ struct SpotLight
 {
     vec3 position;
     vec3 direction;
-    float angleCos;
+    float innerCos;
+    float outerCos;
 };
 
 uniform Material material;
@@ -63,15 +64,18 @@ void main()
     vec3 result = ambient + diffuse + specular; 
 
     vec3 direction = normalize(fragPos - spotLight.position);
-    float coss = dot(direction, spotLight.direction);
-    if (coss > spotLight.angleCos)
+    float theta = dot(direction, spotLight.direction);
+    if (theta > spotLight.outerCos)
     {
-        result = ambient;
+        vec3 result2 = ambient;
+        float eps = spotLight.innerCos - spotLight.outerCos;
+        float intensity = clamp((theta - spotLight.outerCos) / eps, 0.0, 1.0);
 
         float diff = max(dot(direction, -norm), 0.0);
         diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TxtCoord));
 
-        result += diffuse;
+        result2 += diffuse * intensity;
+        result = max(result, result2);
     }
     FragColor = vec4(result, 1.0);
 }

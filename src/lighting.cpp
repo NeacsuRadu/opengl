@@ -29,14 +29,18 @@ void process_input(GLFWwindow * pWindow)
         Camera::Instance().UpdatePositionRight();
 }
 
-int main()
+void init()
 {
-    using namespace Engenius;
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+}
 
+int main()
+{
+    using namespace Engenius;
+    init();
     GLFWwindow * pWindow = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Rotation cube", nullptr, nullptr);
     if (!pWindow)
     {
@@ -270,6 +274,10 @@ int main()
         glm::vec3(-1.3f,  1.0f, -1.5f)  
     };
 
+    // GEN SHADOW MAP
+    unsigned int fbo;
+    glGenFramebuffers(1, &fbo);
+
     while (!glfwWindowShouldClose(pWindow))
     {
         float currentTime = glfwGetTime();
@@ -304,7 +312,7 @@ int main()
         // glBindTexture(GL_TEXTURE_2D, texture2);
 
         glBindVertexArray(cube_vertex_array);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        //glDrawArrays(GL_TRIANGLES, 0, 36);
         
         glBindVertexArray(light_source_vao);
         lightSourceProgram.Use();
@@ -335,7 +343,8 @@ int main()
         programContainer2.SetUniform("viewPos", Camera::Instance().GetPosition());
         programContainer2.SetUniform("spotLight.direction", Camera::Instance().GetDirection());
         programContainer2.SetUniform("spotLight.position",  Camera::Instance().GetPosition());
-        programContainer2.SetUniform("spotLight.angleCos", glm::cos(glm::radians(13.0f)));
+        programContainer2.SetUniform("spotLight.innerCos", glm::cos(glm::radians(12.5f)));
+        programContainer2.SetUniform("spotLight.outerCos", glm::cos(glm::radians(17.5f)));
         for (int i = 0; i < 10; ++i)
         {
             glm::mat4 model2 = glm::translate(glm::mat4(1.0f), cubePositions[i]);
